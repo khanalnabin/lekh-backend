@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Status int8
@@ -17,14 +17,15 @@ const (
 )
 
 type User struct {
-	Id           uuid.UUID   `db:"id" json:"id"`
-	CreatedAt    time.Time   `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time   `db:"updated_at" json:"updated_at"`
-	Email        string      `db:"email" json:"email"`
-	Username     string      `db:"username" json:"username"`
-	PasswordHash string      `db:"password_hash" json:"password_hash"`
-	ProfileImage string      `db:"profile_image" json:"profile_image"`
-	UserStatus   Status      `db:"status" json:"status"`
-	Followers    []uuid.UUID `db:"followers" json:"followers"`
-	Following    []uuid.UUID `db:"following" json:"following"`
+	Id           primitive.ObjectID   `bson:"_id" json:"_id"`
+	CreatedAt    time.Time            `bson:"created_at" json:"created_at"`
+	UpdatedAt    time.Time            `bson:"updated_at" json:"updated_at"`
+	Name         string               `bson:"name" json:"name"`
+	Email        string               `bson:"email" json:"email"`
+	Username     string               `bson:"username" json:"username"`
+	PasswordHash string               `bson:"password_hash" json:"password_hash"`
+	ProfileImage string               `bson:"profile_image" json:"profile_image"`
+	UserStatus   Status               `bson:"status" json:"status"`
+	Followers    []primitive.ObjectID `bson:"followers" json:"followers"`
+	Following    []primitive.ObjectID `bson:"following" json:"following"`
 }
