@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Tokens struct {
@@ -17,7 +18,7 @@ type Tokens struct {
 	Refresh string
 }
 
-func GenerateNewTokens(id string) (*Tokens, error) {
+func GenerateNewTokens(id primitive.ObjectID) (*Tokens, error) {
 	accessToken, err := generateNewAccessToken(id)
 	if err != nil {
 		return nil, err
@@ -33,10 +34,9 @@ func GenerateNewTokens(id string) (*Tokens, error) {
 
 }
 
-func generateNewAccessToken(id string) (string, error) {
+func generateNewAccessToken(id primitive.ObjectID) (string, error) {
 	secret := os.Getenv("JWT_SECRET_KEY")
-	minutesCount, _ := strconv.Atoi(os.Getenv("JWT_SECRET_KEY_EXPIRE_MINUTE_COUNT"))
-
+	minutesCount, _ := strconv.Atoi(os.Getenv("JWT_SECRET_KEY_EXPIRE_MINUTES_COUNT"))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":      id,
 		"expires": time.Now().Add(time.Minute * time.Duration(minutesCount)).Unix(),
