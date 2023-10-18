@@ -19,10 +19,12 @@ func Start(a *fiber.App) {
 		<-sigint
 
 		// server shutdown process
-		db := database.DbConn
-		db.Collection("users").Indexes().DropAll(context.Background())
-		log.Println("Closing Database Connection...")
-		db.Client().Disconnect(context.Background())
+		db, err := database.Connect()
+		if err != nil {
+			db.Collection("users").Indexes().DropAll(context.Background())
+			log.Println("Closing Database Connection...")
+			db.Client().Disconnect(context.Background())
+		}
 
 		if err := a.Shutdown(); err != nil {
 			log.Println("Oops... Server is not shutting down! Reason:", err)
