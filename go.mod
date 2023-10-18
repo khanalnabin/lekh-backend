@@ -1,6 +1,6 @@
 module gitlab.com/nabinkhanal/lekh-backend
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/gofiber/contrib/jwt v1.0.7
