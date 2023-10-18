@@ -17,7 +17,7 @@ const (
 )
 
 type User struct {
-	Id           primitive.ObjectID   `bson:"_id" json:"_id"`
+	ID           primitive.ObjectID   `bson:"_id" json:"_id"`
 	CreatedAt    time.Time            `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time            `bson:"updated_at" json:"updated_at"`
 	Name         string               `bson:"name" json:"name"`
