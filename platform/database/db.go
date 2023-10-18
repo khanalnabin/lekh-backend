@@ -10,9 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var DbConn *mongo.Database
-
-func Connect() error {
+func Connect() (*mongo.Database, error) {
 	clientOptions := options.Client()
 	hostURI := os.Getenv("MONGO_URI")
 	dbName := os.Getenv("DB_NAME")
@@ -21,7 +19,7 @@ func Connect() error {
 
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	db := client.Database(dbName)
 	_, err = db.Collection("users").Indexes().CreateMany(context.Background(), []mongo.IndexModel{{
@@ -33,9 +31,8 @@ func Connect() error {
 		Options: options.Index().SetUnique(true),
 	}})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Println("Connected to database.")
-	DbConn = db
-	return nil
+	return db, nil
 }
