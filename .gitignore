@@ -18,3 +18,5 @@
 go.work
 .env
 tmp
+bin
+go.sum
