@@ -2,11 +2,15 @@ package controllers
 
 import (
 	"context"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"gitlab.com/nabinkhanal/lekh-backend/app/models"
 	"gitlab.com/nabinkhanal/lekh-backend/pkg/utils"
+	"gitlab.com/nabinkhanal/lekh-backend/platform/cache"
 	"gitlab.com/nabinkhanal/lekh-backend/platform/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,9 +26,16 @@ func UserRegister(c *fiber.Ctx) error {
 		})
 	}
 
-	db := database.DbConn
+	db, err := database.Connect()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	defer db.Client().Disconnect(context.Background())
 	user := &models.User{}
-	user.Id = primitive.NewObjectID()
+	user.ID = primitive.NewObjectID()
 	user.Name = register.Name
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
@@ -64,12 +75,19 @@ func UserLogin(c *fiber.Ctx) error {
 		})
 	}
 
-	db := database.DbConn
+	db, err := database.Connect()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	defer db.Client().Disconnect(context.Background())
 	collection := db.Collection("users")
 
 	var user models.User
 	filter := bson.M{"username": login.Username}
-	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -86,7 +104,24 @@ func UserLogin(c *fiber.Ctx) error {
 			"msg":   "wrong user email or password",
 		})
 	}
-	tokens, err := utils.GenerateNewTokens(user.Id.String())
+	tokens, err := utils.GenerateNewTokens(user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	userID := user.ID.String()
+
+	connRedis, err := cache.RedisConnection()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	err = connRedis.Set(context.Background(), userID, tokens.Refresh, 0).Err()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -104,8 +139,34 @@ func UserLogin(c *fiber.Ctx) error {
 }
 
 func UserLogout(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"error": false,
-		"msg":   "Success",
+	bearerToken := c.Get("Authorization")
+	tokenString := strings.Split(bearerToken, " ")[1]
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		userID := claims["id"].(string)
+		connRedis, err := cache.RedisConnection()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": true,
+				"msg":   err.Error(),
+			})
+		}
+		err = connRedis.Del(context.Background(), userID).Err()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": true,
+				"msg":   err.Error(),
+			})
+		}
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }
