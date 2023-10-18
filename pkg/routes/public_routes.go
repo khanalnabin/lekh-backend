@@ -1,14 +1,14 @@
 package routes
 
 import (
-	"gitlab.com/nabinkhanal/lekh-backend/app/controllers"
 	"github.com/gofiber/fiber/v2"
+	"gitlab.com/nabinkhanal/lekh-backend/app/controllers"
 )
 
-func PublicRoutes(a *fiber.App){
+func PublicRoutes(a *fiber.App) {
 	route := a.Group("/api/v1")
 
-	route.Post("/user/register", controllers.UserRegister)
-	route.Post("/user/login", controllers.UserLogin)
+	route.Post("/auth/register", controllers.UserRegister)
+	route.Post("/auth/login", controllers.UserLogin)
 
 }
