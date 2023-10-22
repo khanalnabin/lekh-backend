@@ -2,7 +2,7 @@ FROM golang:latest
 
 WORKDIR /output
 
-COPY ./output
+COPY . /output
 
 RUN go mod tidy
 
